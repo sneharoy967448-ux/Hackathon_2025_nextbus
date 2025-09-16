@@ -1,4 +1,4 @@
-# Hackathon_2025_nextbus
+
 # NextBus App – Documentation & Presentation README
 
 ## Role

@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NEXT STOP - Bus Route Tracker</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: rgba(255, 255, 255, 0.04);
+      --glass: rgba(255, 255, 255, 0.03);
+      --text: #e6eef8;
+      --muted: #9fb0c9;
+      --accent: #60a5fa;
+      --success: #34d399;
+      --card-blur: 8px;
+    }
+
+    .light {
+      --bg: #f6f9fc;
+      --card: rgba(255, 255, 255, 0.7);
+      --glass: rgba(255, 255, 255, 0.8);
+      --text: #07203a;
+      --muted: #5b6b78;
+      --accent: #0ea5e9;
+      --success: #059669;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--bg), #071029)
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--glass);
+      padding: 4px;
+    }
+
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      height: 100vh;
+      padding: 20px
+    }
+
+    header.app-header {
+      grid-column: 1/-1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: var(--glass);
+      backdrop-filter: blur(var(--card-blur));
+      border: 1px solid rgba(255, 255, 255, 0.03)
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600
+    }
+
+    .username {
+      font-weight: 600
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      padding: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text);
+      transition: background 0.2s
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.1)
+    }
+
+    .sidebar {
+      background: var(--card);
+      padding: 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(var(--card-blur));
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      overflow: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .search {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px
+    }
+
+    .search input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(0, 0, 0, 0.15);
+      color: var(--text);
+      outline: none
+    }
+
+    .search input::placeholder {
+      color: var(--muted)
+    }
+
+    .search .btn {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #022;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s
+    }
+
+    .search .btn:hover {
+      transform: translateY(-1px)
+    }
+
+    .routes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .route-card {
+      padding: 10px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.02));
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease
+    }
+
+    .route-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3)
+    }
+
+    .route-meta {
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    .route-number {
+      font-weight: 700;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03)
+    }
+
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px
+    }
+
+    .map-card {
+      height: 60vh;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent)
+    }
+
+    #map {
+      width: 100%;
+      height: 100%
+    }
+
+    .details {
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--card);
+      backdrop-filter: blur(var(--card-blur));
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      overflow-y: auto;
+      max-height: 40vh
+    }
+
+    .details h3 {
+      margin: 0 0 8px 0
+    }
+
+    .stops {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .stop {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start
+    }
+
+    .stop .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 6px;
+      flex-shrink: 0
+    }
+
+    .stop small {
+      color: var(--muted)
+    }
+
+    .timeline {
+      border-left: 2px dashed rgba(255, 255, 255, 0.03);
+      padding-left: 12px;
+      margin-left: 6px
+    }
+
+    .footer-note {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px
+    }
+
+    .hamburger {
+      display: none
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-auto-rows: auto;
+        padding: 12px
+      }
+
+      .map-card {
+        height: 50vh
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 80px;
+        left: 12px;
+        width: 280px;
+        height: calc(100% - 100px);
+        transform: translateX(-100%);
+        z-index: 999
+      }
+
+      .sidebar.active {
+        transform: translateX(0);
+      }
+
+      .hamburger {
+        display: inline-flex !important
+      }
+    }
+
+    @media (max-width: 600px) {
+      header.app-header {
+        padding: 10px
+      }
+
+      .app {
+        padding: 8px
+      }
+
+      .map-card {
+        height: 42vh
+      }
+
+      .route-card {
+        font-size: 14px
+      }
+
+      .details h3 {
+        font-size: 16px
+      }
+
+      .search input {
+        padding: 8px;
+        font-size: 14px
+      }
+
+      .details {
+        max-height: 35vh
+      }
+
+      .sidebar {
+        width: calc(100% - 16px);
+        top: 70px
+      }
+    }
+
+    .route-card.active {
+      box-shadow: 0 8px 30px rgba(96, 165, 250, 0.3);
+      transform: translateY(-2px);
+      border-color: rgba(96, 165, 250, 0.3);
+      background: linear-gradient(180deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05))
+    }
+
+    .light .search input {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text)
+    }
+
+    .light .route-card {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: rgba(0, 0, 0, 0.04)
+    }
+
+    .light .details {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .light .icon-btn:hover {
+      background: rgba(0, 0, 0, 0.1)
+    }
+
+    .loading {
+      opacity: 0.6;
+      pointer-events: none
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="user">
+        <!-- Replace NX avatar with logo -->
+        <img src="team_logo.jpg" alt="Next Stop Logo" class="logo" />
+        <div>
+          <div class="username">NEXT BUS</div>
+          <div style="font-size:12px;color:var(--muted)">Welcome to our App</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn hamburger" id="hamburger" title="Toggle routes">☰</button>
+        <button class="icon-btn" id="locateBtn" title="Find nearby stops">📍</button>
+        <button class="icon-btn" id="downloadBtn" title="Download current route JSON">⬇</button>
+        <button class="icon-btn" id="themeBtn" title="Toggle theme">🌓</button>
+      </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="search">
+        <input id="searchInput" placeholder="Search route, stop or pincode" />
+        <button class="btn" id="searchBtn">Search</button>
+      </div>
+      <div class="routes-list" id="routesList"></div>
+      <div class="footer-note">Tip: tap a route to view on map — markers are clickable</div>
+    </aside>
+
+    <!-- Main panel -->
+    <section class="main-panel">
+      <div class="map-card">
+        <div id="map"></div>
+      </div>
+      <div class="details" id="details">
+        <h3>No route selected</h3>
+        <p class="footer-note">Select a route from the left to view stops, timetable and download data.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // Array of bus routes with details
+    const routes = [ // List of all available routes
+      {
+        id: 'kolkata1',
+        number: '215A',
+        name: 'Dunlop → Shyambazar',
+        color: '#e11d48',
+        first: '05:30',
+        last: '22:00',
+        freq: '10–15 mins',
+        stops: [
+          { name: 'Dunlop', lat: 22.6519, lng: 88.3768, p: 700108 },
+          { name: 'Sinthi More', lat: 22.6289, lng: 88.3742, p: 700050 },
+          { name: 'Chiria More', lat: 22.6247, lng: 88.3737, p: 700037 },
+          { name: 'Rabindra Bharati', lat: 22.6219, lng: 88.3734, p: 700050 },
+          { name: 'Chitpur', lat: 22.6186, lng: 88.3731, p: 700002 },
+          { name: 'Cossipore', lat: 22.6163, lng: 88.3730, p: 700002 },
+          { name: 'Bagbazar', lat: 22.6074, lng: 88.3725, p: 700003 },
+          { name: 'Sovabazar', lat: 22.6033, lng: 88.3725, p: 700005 },
+          { name: 'Shyambazar', lat: 22.6013, lng: 88.3726, p: 700004 }
+        ]
+      },
+      {
+        id: 'kolkata2',
+        number: '30A',
+        name: 'Howrah → Esplanade',
+        color: '#059669',
+        first: '05:00',
+        last: '23:30',
+        freq: '8–12 mins',
+        stops: [
+          { name: 'Howrah Station', lat: 22.5958, lng: 88.2636, p: 711101 },
+          { name: 'Howrah Bridge', lat: 22.5851, lng: 88.3467, p: 700001 },
+          { name: 'B.B.D. Bagh', lat: 22.5726, lng: 88.3639, p: 700001 },
+          { name: 'Esplanade', lat: 22.5675, lng: 88.3533, p: 700069 }
+        ]
+      },
+      {
+        id: 'kolkata3',
+        number: '45',
+        name: 'Sealdah → Tollygunge',
+        color: '#7c3aed',
+        first: '05:15',
+        last: '22:45',
+        freq: '12–18 mins',
+        stops: [
+          { name: 'Sealdah Station', lat: 22.5049, lng: 88.3712, p: 700014 },
+          { name: 'Park Street', lat: 22.5448, lng: 88.3634, p: 700016 },
+          { name: 'Rashbehari', lat: 22.5186, lng: 88.3639, p: 700029 },
+          { name: 'Tollygunge', lat: 22.4625, lng: 88.3515, p: 700040 }
+        ]
+      }
+    ];
+
+    // Create the map instance and set initial view
+    const map = L.map('map', { zoomControl: false }).setView([22.62, 88.373], 13); // Main map object
+
+    // Add zoom control to bottom right
+    L.control.zoom({ position: 'bottomright' }).addTo(map); // Move zoom control to bottom right
+
+    // Dark and light tile layers for theme switching
+    const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '©OpenStreetMap, ©CARTO',
+      maxZoom: 19
+    });
+    const lightTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '©OpenStreetMap contributors',
+      maxZoom: 19
+    });
+
+    darkTiles.addTo(map); // Default to dark theme
+    const routeLayer = L.layerGroup().addTo(map); // Layer for routes and markers
+
+    // Get references to UI elements for interaction
+    // Sidebar and controls
+    const routesListEl = document.getElementById('routesList');
+    const detailsEl = document.getElementById('details');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const themeBtn = document.getElementById('themeBtn');
+    const hamburger = document.getElementById('hamburger');
+    const sidebar = document.getElementById('sidebar');
+    const locateBtn = document.getElementById('locateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // Track the currently selected route
+    let activeRoute = null; // Currently selected route
+
+    // Render route cards in the sidebar
+    function renderRoutes(list = routes) { // Display all route cards
+      routesListEl.innerHTML = ''; // Clear previous list
+      if (list.length === 0) {
+        routesListEl.innerHTML = '<div class="footer-note">No routes found</div>'; // Show message if no routes
+        return;
+      }
+
+      list.forEach(r => {
+        const el = document.createElement('div'); // Create card for each route
+        el.className = 'route-card';
+        el.innerHTML = `
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+            <div class="route-number" style="background-color:${r.color}20;color:${r.color}">${r.number}</div>
+            <div style='font-weight:600'>${r.name}</div>
+          </div>
+          <div class='route-meta'>${r.first} · ${r.last} · ${r.freq}</div>
+        </div>`;
+        el.onclick = () => { selectRoute(r, el) }; // Select route on click
+        routesListEl.appendChild(el); // Add card to sidebar
+      });
+    }
+
+    // Handle route selection, draw route and stops, and start bus animation
+    function selectRoute(route, el) { // When a route is selected
+      document.querySelectorAll('.route-card').forEach(x => x.classList.remove('active')); // Remove active from all
+      el.classList.add('active'); // Highlight selected card
+      activeRoute = route; // Store selected route
+
+      // Clear previous route and stop any existing bus animation
+      routeLayer.clearLayers(); // Remove previous route from map
+      if (window.busInterval) {
+        clearInterval(window.busInterval); // Stop previous bus animation
+        window.busInterval = null;
+      }
+
+      // Draw route line
+      const latlngs = route.stops.map(s => [s.lat, s.lng]); // Get coordinates for route
+      L.polyline(latlngs, {
+        color: route.color, // Route color
+        weight: 4, // Line thickness
+        opacity: 0.8,
+        dashArray: '10, 5' // Dashed line
+      }).addTo(routeLayer); // Draw route line
+
+      // Add stop markers
+      route.stops.forEach((s, i) => {
+        const isFirst = i === 0; // First stop
+        const isLast = i === route.stops.length - 1; // Last stop
+        // Add marker for each stop
+        L.circleMarker([s.lat, s.lng], {
+          radius: isFirst || isLast ? 9 : 6, // Bigger for first/last
+          fill: true,
+          fillColor: isFirst ? '#34d399' : isLast ? '#ef4444' : route.color, // Green/red for start/end
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 0.9
+        })
+          .addTo(routeLayer)
+          .bindPopup(`
+          <div style="font-weight:600;margin-bottom:4px">${s.name}</div>
+          <div style="font-size:12px;color:#666;margin-bottom:2px">PIN: ${s.p}</div>
+          <div style="font-size:11px;color:#888">Stop ${i + 1} of ${route.stops.length}</div>
+        `); // Show stop info
+      });
+
+      // Fit map to route bounds
+      map.fitBounds(L.polyline(latlngs).getBounds().pad(0.1)); // Zoom map to fit route
+
+      // Update details panel
+      // Update details panel with route info
+      detailsEl.innerHTML = `
+      <h3>${route.number} — ${route.name}</h3>
+      <div class="route-meta" style="margin-bottom:16px">
+        <span style="color:${route.color}">●</span> First: ${route.first} · Last: ${route.last} · Frequency: ${route.freq}
+      </div>
+      <div class="timeline">
+        <div class="stops">
+          ${route.stops.map((s, i) => `
+            <div class="stop">
+              <div class="dot" style="background-color:${i === 0 ? '#34d399' : i === route.stops.length - 1 ? '#ef4444' : route.color}"></div>
+              <div>
+                <strong>${s.name}</strong>
+                <br><small>Lat ${s.lat.toFixed(5)}, Lng ${s.lng.toFixed(5)} · PIN ${s.p}</small>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="footer-note" style="margin-top:12px">
+        🟢 Start · 🔴 End · <span style="color:${route.color}">●</span> Stops
+      </div>
+    `;
+
+      // Start bus animation
+      startBusAnimation(route); // Start bus animation
+
+      // Close sidebar on mobile after selection
+      if (window.innerWidth <= 980) {
+        sidebar.classList.remove('active'); // Hide sidebar on mobile
+      }
+    }
+
+    // Animate a bus marker moving along the selected route
+    function startBusAnimation(route) { // Move bus icon along route
+      if (route.stops.length < 2) return; // Need at least 2 stops
+
+      // Bus variables for four buses, each starts at a different position
+      let currentIndex1 = 0; // Bus 1 starts at first stop
+      let progress1 = 0;
+      let currentIndex2 = Math.floor(route.stops.length / 4); // Bus 2 starts at 1/4th stop
+      let progress2 = 0;
+      let currentIndex3 = Math.floor(route.stops.length / 2); // Bus 3 starts at halfway
+      let progress3 = 0;
+      let currentIndex4 = Math.floor(3 * route.stops.length / 4); // Bus 4 starts at 3/4th stop
+      let progress4 = 0;
+
+      // Create four bus markers at their starting points
+      const busMarker1 = L.marker([route.stops[currentIndex1].lat, route.stops[currentIndex1].lng], {
+        icon: L.divIcon({
+          html: "🚌", // Bus emoji
+          className: "bus-marker",
+          iconSize: [18, 18],
+          iconAnchor: [12, 12]
+        })
+      }).addTo(routeLayer).bindPopup(`Bus on Route ${route.number}`);
+
+      const busMarker2 = L.marker([route.stops[currentIndex2].lat, route.stops[currentIndex2].lng], {
+        icon: L.divIcon({
+          html: "🚌", // Bus emoji
+          className: "bus-marker",
+          iconSize: [18, 18],
+          iconAnchor: [12, 12]
+        })
+      }).addTo(routeLayer).bindPopup(`Bus on Route ${route.number}`);
+
+      const busMarker3 = L.marker([route.stops[currentIndex3].lat, route.stops[currentIndex3].lng], {
+        icon: L.divIcon({
+          html: "🚌", // Bus emoji
+          className: "bus-marker",
+          iconSize: [18, 18],
+          iconAnchor: [12, 12]
+        })
+      }).addTo(routeLayer).bindPopup(`Bus on Route ${route.number}`);
+
+      const busMarker4 = L.marker([route.stops[currentIndex4].lat, route.stops[currentIndex4].lng], {
+        icon: L.divIcon({
+          html: "🚌", // Bus emoji
+          className: "bus-marker",
+          iconSize: [18, 18],
+          iconAnchor: [12, 12]
+        })
+      }).addTo(routeLayer).bindPopup(`Bus on Route ${route.number}`);
+
+      // Animate all four buses
+      window.busInterval = setInterval(() => {
+        // Bus 1 movement (forward direction)
+        const nextIndex1 = (currentIndex1 + 1) % route.stops.length;
+        const curr1 = route.stops[currentIndex1];
+        const next1 = route.stops[nextIndex1];
+        // Interpolate position between current and next stop
+        const lat1 = curr1.lat + (next1.lat - curr1.lat) * progress1;
+        const lng1 = curr1.lng + (next1.lng - curr1.lng) * progress1;
+        busMarker1.setLatLng([lat1, lng1]); // Move bus marker
+        progress1 += 0.01; // Speed of bus
+        if (progress1 >= 1) {
+          progress1 = 0;
+          currentIndex1 = nextIndex1;
+          busMarker1.setPopupContent(`Bus at ${next1.name} (Route ${route.number})`); // Update popup
+        }
+
+        // Bus 2 movement (forward direction)
+        const nextIndex2 = (currentIndex2 + 1) % route.stops.length;
+        const curr2 = route.stops[currentIndex2];
+        const next2 = route.stops[nextIndex2];
+        const lat2 = curr2.lat + (next2.lat - curr2.lat) * progress2;
+        const lng2 = curr2.lng + (next2.lng - curr2.lng) * progress2;
+        busMarker2.setLatLng([lat2, lng2]);
+        progress2 += 0.01;
+        if (progress2 >= 1) {
+          progress2 = 0;
+          currentIndex2 = nextIndex2;
+          busMarker2.setPopupContent(`Bus at ${next2.name} (Route ${route.number})`);
+        }
+
+        // Bus 3 movement (forward direction)
+        const nextIndex3 = (currentIndex3 + 1) % route.stops.length;
+        const curr3 = route.stops[currentIndex3];
+        const next3 = route.stops[nextIndex3];
+        const lat3 = curr3.lat + (next3.lat - curr3.lat) * progress3;
+        const lng3 = curr3.lng + (next3.lng - curr3.lng) * progress3;
+        busMarker3.setLatLng([lat3, lng3]);
+        progress3 += 0.01;
+        if (progress3 >= 1) {
+          progress3 = 0;
+          currentIndex3 = nextIndex3;
+          busMarker3.setPopupContent(`Bus at ${next3.name} (Route ${route.number})`);
+        }
+
+        // Bus 4 movement (for 30A route, move in reverse direction)
+        let nextIndex4, curr4, next4, lat4, lng4;
+        if (route.number === '30A') {
+          // For 30A, bus 4 moves in reverse
+          nextIndex4 = (currentIndex4 - 1 + route.stops.length) % route.stops.length;
+          curr4 = route.stops[currentIndex4];
+          next4 = route.stops[nextIndex4];
+          lat4 = curr4.lat + (next4.lat - curr4.lat) * progress4;
+          lng4 = curr4.lng + (next4.lng - curr4.lng) * progress4;
+        } else {
+          // For other routes, bus 4 moves forward
+          nextIndex4 = (currentIndex4 + 1) % route.stops.length;
+          curr4 = route.stops[currentIndex4];
+          next4 = route.stops[nextIndex4];
+          lat4 = curr4.lat + (next4.lat - curr4.lat) * progress4;
+          lng4 = curr4.lng + (next4.lng - curr4.lng) * progress4;
+        }
+        busMarker4.setLatLng([lat4, lng4]); // Move bus marker
+        progress4 += 0.01;
+        if (progress4 >= 1) {
+          progress4 = 0;
+          currentIndex4 = nextIndex4;
+          busMarker4.setPopupContent(`Bus at ${next4.name} (Route ${route.number})`);
+        }
+      }, 2000); // Update every 2 sec
+    }
+
+    // Search for routes or stops based on user input
+    function doSearch() { // Filter routes by search
+      const q = searchInput.value.trim().toLowerCase(); // Get search query
+      if (!q) {
+        renderRoutes(); // Show all if empty
+        return;
+      }
+
+      // Filter routes by number, name, stop name, or pincode
+      const filtered = routes.filter(r =>
+        r.number.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        r.stops.some(s =>
+          s.name.toLowerCase().includes(q) ||
+          String(s.p).includes(q)
+        )
+      );
+      renderRoutes(filtered); // Show filtered routes
+    }
+
+    // Attach search event listeners
+    searchBtn.onclick = doSearch; // Search button click
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch(); // Enter key triggers search
+    });
+    searchInput.addEventListener('input', doSearch); // Real-time search on input
+
+    // Toggle between dark and light theme for the map and UI
+    themeBtn.onclick = () => {
+      document.body.classList.toggle('light'); // Toggle theme class
+      if (document.body.classList.contains('light')) {
+        map.removeLayer(darkTiles); // Switch to light tiles
+        lightTiles.addTo(map);
+        themeBtn.innerHTML = '🌙'; // Change icon
+      } else {
+        map.removeLayer(lightTiles); // Switch to dark tiles
+        darkTiles.addTo(map);
+        themeBtn.innerHTML = '🌓'; // Change icon
+      }
+    }
+
+    // Show/hide sidebar on mobile using hamburger button
+    hamburger.onclick = () => {
+      sidebar.classList.toggle('active'); // Toggle sidebar
+      setTimeout(() => map.invalidateSize(), 300); // Fix map size
+    }
+
+    // Close sidebar when clicking outside (mobile only)
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 980 &&
+        sidebar.classList.contains('active') &&
+        !sidebar.contains(e.target) &&
+        !hamburger.contains(e.target)) {
+        sidebar.classList.remove('active'); // Hide sidebar if clicked outside
+      }
+    });
+
+    // Adjust sidebar and map size on window resize
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 980) {
+        sidebar.classList.remove('active'); // Always show sidebar on desktop
+      }
+      map.invalidateSize(); // Fix map size
+    });
+
+    // Locate user's position and find nearest bus stop
+    locateBtn.onclick = () => { // Find user's location
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported by your browser'); // Browser doesn't support geolocation
+        return;
+      }
+
+      locateBtn.classList.add('loading'); // Show loading state
+      locateBtn.innerHTML = '⏳';
+
+      navigator.geolocation.getCurrentPosition(pos => { // Get current position
+        locateBtn.classList.remove('loading'); // Remove loading
+        locateBtn.innerHTML = '📍';
+
+        const { latitude, longitude } = pos.coords; // User's coordinates
+
+        // Add user location marker
+        // Add marker for user location
+        const userMarker = L.circleMarker([latitude, longitude], {
+          radius: 10,
+          color: '#fff',
+          fillColor: '#ff6b35',
+          fillOpacity: 1,
+          weight: 3
+        }).addTo(routeLayer).bindPopup('📍 You are here').openPopup();
+
+        // Find nearest stop
+        let nearest = null; // Closest stop
+        let bestDist = Infinity; // Smallest distance
+        let bestRoute = null; // Route of nearest stop
+
+        // Find nearest stop from all routes
+        routes.forEach(r => r.stops.forEach(s => {
+          const d = distance(latitude, longitude, s.lat, s.lng); // Calculate distance
+          if (d < bestDist) {
+            bestDist = d;
+            nearest = s;
+            bestRoute = r;
+          }
+        }));
+
+        if (nearest) {
+          map.setView([latitude, longitude], 15); // Zoom to user
+          // Draw line to nearest stop
+          L.polyline([[latitude, longitude], [nearest.lat, nearest.lng]], {
+            color: '#ff6b35',
+            weight: 2,
+            dashArray: '5, 5',
+            opacity: 0.7
+          }).addTo(routeLayer);
+          // Show alert with nearest stop info
+          setTimeout(() => {
+            alert(`Nearest stop: ${nearest.name}\nRoute: ${bestRoute.number}\nDistance: ${(bestDist / 1000).toFixed(2)} km`);
+          }, 500);
+        }
+      }, err => {
+        locateBtn.classList.remove('loading'); // Remove loading
+        locateBtn.innerHTML = '📍';
+        alert('Could not get your location. Please check permissions.'); // Error message
+        console.error('Geolocation error:', err); // Log error
+      }, {
+        enableHighAccuracy: true, // High accuracy
+        timeout: 10000, // Timeout
+        maximumAge: 60000 // Cache age
+      });
+    }
+
+    // Download the selected route's data as a JSON file
+    downloadBtn.onclick = () => { // Download route JSON
+      if (!activeRoute) {
+        alert('Please select a route first'); // No route selected
+        return;
+      }
+
+      // Prepare route data for download
+      const dataToDownload = {
+        ...activeRoute,
+        downloadedAt: new Date().toISOString(), // Timestamp
+        totalStops: activeRoute.stops.length // Number of stops
+      };
+
+      // Create and download JSON file
+      const blob = new Blob([JSON.stringify(dataToDownload, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `route-${activeRoute.number.replace(/[^a-zA-Z0-9]/g, '')}.json`; // Filename
+      document.body.appendChild(a);
+      a.click(); // Trigger download
+      a.remove(); // Remove link
+      URL.revokeObjectURL(url); // Clean up
+      // Show success feedback
+      downloadBtn.innerHTML = '✅';
+      setTimeout(() => {
+        downloadBtn.innerHTML = '⬇'; // Reset icon
+      }, 2000);
+    }
+
+    // Calculate distance between two coordinates using Haversine formula
+    function distance(lat1, lon1, lat2, lon2) { // Haversine formula
+      function toRad(v) { return v * Math.PI / 180 } // Convert degrees to radians
+      const R = 6371000; // Earth's radius in meters
+      const dLat = toRad(lat2 - lat1); // Latitude difference
+      const dLon = toRad(lon2 - lon1); // Longitude difference
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2); // Haversine formula
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // Angular distance
+      return R * c; // Distance in meters
+    }
+
+    // Initialize the app: render routes and add welcome marker
+    function init() {
+      renderRoutes(); // Show all routes
+      // Add welcome marker to map
+      L.marker([22.62, 88.373]).addTo(routeLayer)
+        .bindPopup('Welcome to Kolkata Bus Routes!')
+        .openPopup();
+      // Log initialization
+      console.log('🚌 Next Stop App initialized with', routes.length, 'routes');
+    }
+
+    // Start the app when page loads
+    document.addEventListener('DOMContentLoaded', init); // Run init when DOM is ready
+
+    // Pause/resume bus animation when page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && window.busInterval) {
+        clearInterval(window.busInterval); // Pause animation
+      } else if (!document.hidden && activeRoute) {
+        startBusAnimation(activeRoute); // Resume animation
+      }
+    });
+  </script>
+
+</body>
+
+</html>
